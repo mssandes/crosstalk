@@ -29,10 +29,10 @@ Copyright (C) 2024 Marton S Santos.
 # Declare which functions will be exposed when using `from script import *`
 __all__ = [
     'autocorr', 'cellFunction', 'createPath', 'derivCellFunction', 
-    'derivXtalkFunction', 'DateInfo', 'genCellSamples', 'genXTcSamples', 
+    'derivXtalkFunction', 'DateInfo', 'genCellSamples', 'genXTcSamples', 'genXTlSamples', 
     'genSampDelay', 'genNoise', 'getIdxClus_mxn', 'getIdxSampClus', 
     'loadSaveDict', 'min_max', 'OptFilt', 'plotHeatmap', 
-    'plotSS', 'plotHisto', 'readDirectCells', 'plotSigmClus', 
+    'plotSS', 'plotHisto', 'plotScatter', 'readDirectCells', 'plotSigmClus', 'rms',
     'timeInfo', 'XTalk'
 ]
 
@@ -120,7 +120,7 @@ plt.rc('figure', titlesize = BIGGER_SIZE)  # fontsize of the figure title
 ##########################################
 Ndpi = 500
 
-        
+      
 ##===========================================================
 ### Autocorrelation function
 def autocorr(x):
@@ -207,14 +207,12 @@ def derivXtalkFunction(x):
 ##===========================================================
 def genCellSamples(vectDelay, g_tau_0, nSamp):
     #ClustCellSamples, derivCellSamples = np.zeros(vectDelay.shape*nSamp), np.zeros(vectDelay.shape*nSamp)
-    ClustCellSamples, derivCellSamples = [], []
+    clustCellSamples, derivCellSamples = [], []
     for cellDelay in vectDelay:
         for n in range(nSamp):
-#             ClustCellSamples[i] = cellFunction( 25*(n+1) + vectDelay[i] + g_tau_0 )
-#             derivCellSamples[i] = derivCellFunction( 25*(n+1) + vectDelay[i] + g_tau_0 )
-            ClustCellSamples.append( cellFunction( 25*(n+1) + cellDelay + g_tau_0 ))
-            derivCellSamples.append( derivCellFunction( 25*(n+1) + cellDelay + g_tau_0 ))
-    return array(ClustCellSamples), array(derivCellSamples)
+            clustCellSamples.append( cellFunction( 25*(n+1) + cellDelay + g_tau_0 ))
+    
+    return array(clustCellSamples)
 
 ##===========================================================
 def loadSaveDict(filename, **kwargs):
@@ -226,7 +224,7 @@ def loadSaveDict(filename, **kwargs):
         if os.path.exists(filename):  # Check if the file exists
             with open(filename, "rb") as file:
                 loadedDict = pkl.load(file)
-            if not loadedDict:
+            if loadedDict is None or (isinstance(loadedDict, (dict, list, np.ndarray)) and len(loadedDict) == 0):
                 print("The file is empty.")
             else:
                 return loadedDict
@@ -236,7 +234,7 @@ def loadSaveDict(filename, **kwargs):
         
     if save is not None:
         with open(filename, "wb") as file:
-            pickle.dump(dataDict, file)   
+            pkl.dump(dataDict, file)
 
 ## =========================================================
 def getMeanRms(x1, MeanRms='mean'):    
@@ -273,8 +271,9 @@ def getIdxClus_mxn(cluster, m, n):
         n -  desired new order
     """
     #m, n = 5,5
-    row, col = cluster.shape[0] // 2, cluster.shape[1] // 2    
-    idx_mxn = cluster[row - m // 2:row + m // 2 + 1, col - n // 2:col + n // 2 + 1]
+    cluster = cluster.reshape(m,m)
+    row, col = np.shape(cluster)[0] // 2, np.shape(cluster)[1] // 2    
+    idx_mxn = cluster[row - n // 2:row + n // 2 + 1, col - n // 2:col + n // 2 + 1]
     
     return idx_mxn.flatten()
 
@@ -315,7 +314,7 @@ def genSampDelay(self, n=None):
 ## ==========================================================
 
 def genXTcSamples(vectDelay, g_tau_0, nSamp):    
-    g_AmpXt_C   = 4.0/100         ## XTalk amplitude on % values of the Energy
+    #g_AmpXt_C   = 4.0/100         ## XTalk amplitude on % values of the Energy
     ClustXTcSamples = []
     for cellDelay in vectDelay:
         for n in range(nSamp):        
@@ -335,7 +334,7 @@ def genXTlSamples(vectDelay, g_tau_0, nSamp):
     return array(ClustXTlSamples)
 
 ## ==========================================================
-def genNoise(self, n=None, norm=False):    
+def genNoise(n=None, norm=False):    
     g_AmpNoise    = 50   ## MeV    
     noise = np.zeros(n)
     for i in range(n):
@@ -357,8 +356,8 @@ def OptFilt(samples, ai=None, bi=None):
        Computes the Amplitude and time of flights for LAr cells samples
     """
     idx_7x7 = array(range(49))
-    idx_5x5 = getIdxClus_mxn(idx_7x7.reshape(7,7), 5, 5)
-    idx_3x3 = getIdxClus_mxn(idx_7x7.reshape(7,7), 3, 3)
+    idx_5x5 = getIdxClus_mxn(idx_7x7, 7, 5 )
+    idx_3x3 = getIdxClus_mxn(idx_7x7, 7, 3 )
     ij_cell = ['-3,3' , '-2,3' , '-1,3' , '0,3' , '1,3' , '2,3' , '3,3' , 
            '-3,2' , '-2,2' , '-1,2' , '0,2' , '1,2' , '2,2' , '3,2' , 
            '-3,1' , '-2,1' , '-1,1' , '0,1' , '1,1' , '2,1' , '3,1' , 
@@ -860,10 +859,10 @@ def plotHisto(y1, **kwargs):
     if params["label"].lower() == 'energy':
         if rms( array( arrays ) ) < 0.01:
             arrays = list(10000*array(arrays))
-            xLabel = r'Energy [$10^{-3}$'+f' {params["unit"]}]'
+            xLabel = r'Energy [$10^{-3}$'+f' GeV]'
         else :
             xLabel = f'Energy [{params["unit"]}]'
-    elif params["label"] == 'time':        
+    elif params["label"].lower() == 'time':        
         xLabel = 'Time [ns]'
         unit   = 'ns'        
     elif params["label"] == 'ss':
@@ -1105,7 +1104,7 @@ def plotScatter(yPred, yTrue, **kwargs):
     default_params = {
         "ext": "png",
         "fileName": "",
-        "cell": "",
+        "label": "",
         "MeanRms": "mean",
         "pathOut": "",
         "prefix": " ",
@@ -1126,7 +1125,7 @@ def plotScatter(yPred, yTrue, **kwargs):
 
     axes = plt.gca()
     #ax[0].scatter(yTrue, yPred, s=7, label=f'{params["struct"]} - Cell {params["cell"]}')
-    ax[0].scatter(yTrue, yPred, s=7, label=f'cell: {params["cell"]}')
+    ax[0].scatter(yTrue, yPred, s=7, label=f'{params["label"]}')
     ax[0].plot(X_plot, m*X_plot + b, '-',color='r', alpha=0.5)
     
     #ax[0].plot([min(yTest[:,idxCell]), max(yTest[:,idxCell])], [min(yPred[:,idxCell]), max(yPred[:,idxCell])],color='r',alpha=0.7)
@@ -1149,6 +1148,7 @@ def plotScatter(yPred, yTrue, **kwargs):
     
     ax[0].spines['top'].set_visible(False)
     ax[0].spines['right'].set_visible(False)
+    
     ax[1].spines['top'].set_visible(False)
     ax[1].spines['right'].set_visible(False)
 
@@ -1165,6 +1165,9 @@ def min_max(x1):
     """
     return np.min(x1), np.max(x1)
 
+##===========================================================
+def rms(x, axis=None):
+    return np.sqrt(np.mean(x**2, axis=axis))  
 
 ##===========================================================
 ### Sort array in ascending/descending order
