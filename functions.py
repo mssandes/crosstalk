@@ -30,7 +30,7 @@ Copyright (C) 2024 Marton S Santos.
 __all__ = [
     'autocorr', 'cellFunction', 'createPath', 'derivCellFunction', 
     'derivXtalkFunction', 'DateInfo', 'genCellSamples', 'genXTcSamples', 'genXTlSamples', 
-    'genSampDelay', 'genNoise', 'getIdxClus_mxn', 'getIdxSampClus', 
+    'genSampDelay', 'genNoise', 'getIdxClus_mxn', 'getIdxSampClus', 'getMeanRms',
     'loadSaveDict', 'min_max', 'OptFilt', 'plotHeatmap', 
     'plotSS', 'plotHisto', 'plotScatter', 'readDirectCells', 'plotSigmClus', 'rms',
     'timeInfo', 'XTalk'
@@ -243,7 +243,7 @@ def getMeanRms(x1, MeanRms='mean', decimals=2):
     # Determine whether to calculate 'mean' or 'rms'
     if MeanRms.lower() == 'mean':
         means = np.maximum(np.round(np.mean(x1, axis=1), decimals), 10**(-decimals))  # Calculate mean for each column
-        ## Calculate the std error rounded to decimals precision, and fix to 0.01 if 0.0 as a result
+        ## Calculate the std error rounded to decimals precision, and fix to 10^(-decimals) if 0.0 as a result
         stdError = np.maximum(np.round(np.std(x1, axis=1)/np.sqrt(N), decimals), 10**(-decimals) )
         
     elif MeanRms.lower() == 'rms':
