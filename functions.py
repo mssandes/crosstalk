@@ -237,27 +237,27 @@ def loadSaveDict(filename, **kwargs):
             pkl.dump(dataDict, file)
 
 ## =========================================================
-def getMeanRms(x1, MeanRms='mean'):    
-
+## =========================================================
+def getMeanRms(x1, MeanRms='mean', decimals=2):
+    N = np.shape(x1)[0]
     # Determine whether to calculate 'mean' or 'rms'
     if MeanRms.lower() == 'mean':
-        means = np.mean(x1, axis=1)  # Calculate mean for each column
-        #stds = np.std(x1, axis=1)    # Calculate std for each column
-        stds = np.maximum(np.round(np.std(x1, axis=1), 2), 0.01) 
+        means = np.maximum(np.round(np.mean(x1, axis=1), decimals), 10**(-decimals))  # Calculate mean for each column
+        ## Calculate the std error rounded to decimals precision, and fix to 0.01 if 0.0 as a result
+        stdError = np.maximum(np.round(np.std(x1, axis=1)/np.sqrt(N), decimals), 10**(-decimals) )
         
     elif MeanRms.lower() == 'rms':
-        means = rms(x1, axis=1)      # Calculate rms for each column
+        means = np.round( rms(x1, axis=1), decimals )      # Calculate rms for each column
         #stds = np.std(x1, axis=1)    # Calculate std for each column
-        stds = np.maximum(np.round(np.std(x1, axis=1), 2), 0.01)    # Calculate std for each column
-        
+        stdError = np.maximum(np.round(np.std(x1, axis=1)/np.sqrt(N), decimals), 10**(-decimals) )    # Calculate std for each column
         
     else:
         raise ValueError("MeanRms should be either 'mean' or 'rms'.")
 
     # Intercalate means and stds dynamically
     results = []
-    for mean, std in zip(means, stds):
-        results.append([mean, std])
+    for mean, stdErr in zip(means, stdError):
+        results.append([mean, stdErr])
         #results.append(std)
 
     return results
