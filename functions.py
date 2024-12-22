@@ -237,30 +237,43 @@ def loadSaveDict(filename, **kwargs):
             pkl.dump(dataDict, file)
 
 ## =========================================================
-## =========================================================
 def getMeanRms(x1, MeanRms='mean', decimals=2):
-    N = np.shape(x1)[0]
-    # Determine whether to calculate 'mean' or 'rms'
+    N = np.shape(x1)[1]  # Number of columns (samples per row)
+
     if MeanRms.lower() == 'mean':
-        means = np.maximum(np.round(np.mean(x1, axis=1), decimals), 10**(-decimals))  # Calculate mean for each column
-        ## Calculate the std error rounded to decimals precision, and fix to 10^(-decimals) if 0.0 as a result
-        stdError = np.maximum(np.round(np.std(x1, axis=1)/np.sqrt(N), decimals), 10**(-decimals) )
-        
+        # Calculate mean for each row
+        means = np.round(np.mean(x1, axis=1), decimals)
+
+        # Calculate standard error, enforce threshold with sign handling
+        stdError = np.where(
+            np.abs(np.round(np.std(x1, axis=1) / np.sqrt(N), decimals)) < 10**(-decimals),
+            np.sign(np.round(np.std(x1, axis=1) / np.sqrt(N), decimals)) * 10**(-decimals),
+            np.round(np.std(x1, axis=1, ddof=1) / np.sqrt(N), decimals)
+        )
+
     elif MeanRms.lower() == 'rms':
-        means = np.round( rms(x1, axis=1), decimals )      # Calculate rms for each column
-        #stds = np.std(x1, axis=1)    # Calculate std for each column
-        stdError = np.maximum(np.round(np.std(x1, axis=1)/np.sqrt(N), decimals), 10**(-decimals) )    # Calculate std for each column
-        
+        # Calculate RMS for each row
+        rms = lambda x: np.sqrt(np.mean(np.square(x), axis=1))
+        means = np.round(rms(x1), decimals)
+
+        # Calculate standard error, enforce threshold with sign handling
+        ## np.where(condition, x, y) => x is where the condition is True, y is where the condition is False
+        stdError = np.where(
+            np.abs(np.round(np.std(x1, axis=1) / np.sqrt(N), decimals)) < 10**(-decimals),
+            np.sign(np.round(np.std(x1, axis=1) / np.sqrt(N), decimals)) * 10**(-decimals),
+            np.round(np.std(x1, axis=1, ddof=1) / np.sqrt(N), decimals)
+        )
+
     else:
         raise ValueError("MeanRms should be either 'mean' or 'rms'.")
 
-    # Intercalate means and stds dynamically
+    # Interleave means and standard errors dynamically
     results = []
     for mean, stdErr in zip(means, stdError):
         results.append([mean, stdErr])
-        #results.append(std)
 
     return results
+
 
 ## =======================================
 def getIdxClus_mxn(cluster, m, n):
