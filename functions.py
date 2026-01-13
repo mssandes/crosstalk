@@ -32,7 +32,7 @@ __all__ = [
     'derivXtalkFunction', 'DateInfo', 'genCellSamples', 'genXTcSamples', 'genXTlSamples', 
     'genSampDelay', 'genNoise', 'getIdxClus_mxn', 'getIdxSampClus', 'getMeanRms',
     'loadSaveDict', 'min_max', 'OptFilt', 'plotHeatmap', 
-    'plotSS', 'plotHisto', 'plotScatter', 'readDirectCells', 'plotSigmClus', 'rms',
+    'plotSS', 'plotHisto', 'plotScatter', 'readDirectCells', 'relativeClusters','plotSigmClus', 'rms',
     'timeInfo', 'XTalk'
 ]
 
@@ -657,7 +657,85 @@ def readDirectCells(tree, particle, layer=None, eventMax=None):
         elif eventNumber >= eventMax: break
             
     return DataFrame(d)
-    
+
+##===========================================================
+def relativeClusters(Etruth, debug=False):
+        ## If debug is true is possible to verify is relative cluster is correct
+        ## which means evaluate relationship between first neighbohood with respect
+        ## to XTl (8 cells around interest cell) and XTc (4 cells, UP/DOWN, LEFT/RIGHT)
+    i, j        = np.shape(Etruth)            
+    if debug == True:
+        clusXTc  = np.linspace(1, i*j, i*j, dtype=int).reshape(i, j)
+        clusXTl  = np.linspace(1, i*j, i*j, dtype=int).reshape(i, j)
+        clusXTr  = np.linspace(1, i*j, i*j, dtype=int).reshape(i, j)
+    else :
+        clusXTc  = Etruth*g_AmpXt_C
+        clusXTl  = Etruth*g_AmpXt_L
+        clusXTr  = Etruth*g_AmpXt_R
+
+    XTc_Cluster = np.zeros(Etruth.shape)
+    XTl_Cluster = np.zeros(Etruth.shape)
+    XTr_Cluster = np.zeros(Etruth.shape)
+
+    for (phi, eta), Et in np.ndenumerate(Etruth):
+            # first row
+        if phi == 0 and 0 < eta <  j-1:
+            XTc_Cluster[phi, eta] = clusXTc[phi, eta-1] + clusXTc[phi, eta+1] + clusXTc[phi+1, eta]
+            XTl_Cluster[phi, eta] = clusXTl[phi, eta-1] + clusXTl[phi, eta+1] + clusXTl[phi+1, eta] + clusXTl[phi+1, eta-1] + clusXTl[phi+1, eta+1]
+            XTr_Cluster[phi, eta] = clusXTr[phi, eta-1] + clusXTr[phi, eta+1] + clusXTr[phi+1, eta] + clusXTr[phi+1, eta-1] + clusXTr[phi+1, eta+1]
+            # last row
+        if phi == i-1 and 0 < eta <  j-1:
+            #print(f'eta: {eta} | phi: {phi}')
+            XTc_Cluster[phi, eta] = clusXTc[phi, eta-1] + clusXTc[phi, eta+1] + clusXTc[phi-1, eta]
+            XTl_Cluster[phi, eta] = clusXTl[phi, eta-1] + clusXTl[phi, eta+1] + clusXTl[phi-1, eta] + clusXTl[phi-1, eta-1] + clusXTl[phi-1, eta+1]
+            XTr_Cluster[phi, eta] = clusXTr[phi, eta-1] + clusXTr[phi, eta+1] + clusXTr[phi-1, eta] + clusXTr[phi-1, eta-1] + clusXTr[phi-1, eta+1]
+
+            # center
+        if 0 < phi < i-1 and 0 < eta <  j-1:
+            #print(f'eta: {eta} | phi: {phi}')
+            XTc_Cluster[phi, eta] = clusXTc[phi-1, eta] + clusXTc[phi, eta-1] + clusXTc[phi, eta+1] + clusXTc[phi+1, eta]
+            XTl_Cluster[phi, eta] = clusXTl[phi-1, eta] + clusXTl[phi, eta-1] + clusXTl[phi, eta+1] + clusXTl[phi+1, eta] + clusXTl[phi-1, eta+1] + clusXTl[phi-1, eta-1] + clusXTl[phi+1, eta+1] + clusXTl[phi+1, eta-1]
+            XTr_Cluster[phi, eta] = clusXTr[phi-1, eta] + clusXTr[phi, eta-1] + clusXTr[phi, eta+1] + clusXTr[phi+1, eta] + clusXTr[phi-1, eta+1] + clusXTr[phi-1, eta-1] + clusXTr[phi+1, eta+1] + clusXTr[phi+1, eta-1]
+
+            # first column
+        if eta == 0 and 0 < phi <  i-1:
+            XTc_Cluster[phi, eta] = clusXTc[phi-1, eta] + clusXTc[phi+1, eta] + clusXTc[phi, eta+1]
+            XTl_Cluster[phi, eta] = clusXTl[phi-1, eta] + clusXTl[phi+1, eta] + clusXTl[phi, eta+1] + clusXTl[phi-1, eta+1] + clusXTl[phi+1, eta+1]
+            XTr_Cluster[phi, eta] = clusXTr[phi-1, eta] + clusXTr[phi+1, eta] + clusXTr[phi, eta+1] + clusXTr[phi-1, eta+1] + clusXTr[phi+1, eta+1]
+
+            # last column
+        if eta == j-1 and 0 < phi <  i-1:        
+            XTc_Cluster[phi, eta] = clusXTc[phi-1, eta] + clusXTc[phi+1, eta] + clusXTc[phi, eta-1]
+            XTl_Cluster[phi, eta] = clusXTl[phi-1, eta] + clusXTl[phi+1, eta] + clusXTl[phi, eta-1] + clusXTl[phi-1, eta-1] + clusXTl[phi+1, eta-1]
+            XTr_Cluster[phi, eta] = clusXTr[phi-1, eta] + clusXTr[phi+1, eta] + clusXTr[phi, eta-1] + clusXTr[phi-1, eta-1] + clusXTr[phi+1, eta-1]
+
+            # corner 00
+        if phi == 0 and eta == 0:
+            XTc_Cluster[phi, eta] = clusXTc[phi+1, eta] + clusXTc[phi, eta+1]
+            XTl_Cluster[phi, eta] = clusXTl[phi+1, eta] + clusXTl[phi, eta+1] + clusXTl[phi+1, eta+1]
+            XTr_Cluster[phi, eta] = clusXTr[phi+1, eta] + clusXTr[phi, eta+1] + clusXTr[phi+1, eta+1]
+
+            # corner 0j
+        if eta == j-1 and phi == 0:
+            XTc_Cluster[phi, eta] = clusXTc[phi, eta-1] + clusXTc[phi+1, eta]
+            XTl_Cluster[phi, eta] = clusXTl[phi, eta-1] + clusXTl[phi+1, eta] + clusXTl[phi+1, eta-1]
+            XTr_Cluster[phi, eta] = clusXTr[phi, eta-1] + clusXTr[phi+1, eta] + clusXTr[phi+1, eta-1]
+
+            # corner i0
+        if phi == i-1 and eta == 0:
+            XTc_Cluster[phi, eta] = clusXTc[phi-1, eta] + clusXTc[phi, eta+1]
+            XTl_Cluster[phi, eta] = clusXTl[phi-1, eta] + clusXTl[phi, eta+1] + clusXTl[phi-1, eta+1]
+            XTr_Cluster[phi, eta] = clusXTr[phi-1, eta] + clusXTr[phi, eta+1] + clusXTr[phi-1, eta+1]
+
+            # corner ij
+        if phi == i-1 and eta == j-1:
+            XTc_Cluster[phi, eta] = clusXTc[phi, eta-1] + clusXTc[phi-1, eta]
+            XTl_Cluster[phi, eta] = clusXTl[phi, eta-1] + clusXTl[phi-1, eta] + clusXTl[phi-1, eta-1]
+            XTr_Cluster[phi, eta] = clusXTr[phi, eta-1] + clusXTr[phi-1, eta] + clusXTr[phi-1, eta-1]
+
+    return XTc_Cluster, XTl_Cluster, XTr_Cluster
+
+
 ##===========================================================
 def plotSigmClus(**kwargs):
     from matplotlib.gridspec import GridSpec
