@@ -14,7 +14,11 @@ This codes is a module
 -     generateSignals.ipynb
 
 <p align="center">
-  <img src="Cluster.png" width="35%">
+  <img src="Cluster.png" width="35%"
+    <p align="center">
+  <b>Figure 1.</b> Cell pulse (solid line) and sampling times (black dots).
+</p>
+>
   <img src="clusterAdressing.png" width="20%">
   <img src="LCcoupling_sf.png" width="30%">
 </p>
