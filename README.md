@@ -62,3 +62,18 @@ Main function to XT studies:
 - Computes capacitive or inductive crosstalk (XT) signals for a neighboring cell at sampling time t.
 -     relativeClusters(Etruth)
 - Produces relative capacitive and inductive clusters based on the true deposited energy.
+
+This study aims to develop an ML algorithm for energy and time estimation with crosstalk mitigation. As shown in Fig. 4, 𝑁 N events are organized into vectors of dimension 100 (25 cells × 4 time samples per cell) and used as inputs to a neural network for cluster-level energy and time estimation.
+
+<p align="center">
+  <b>Fig. 4.</b> Input vector used to ML techiniques to estimate energy and time mitigating XT effects.
+</p>
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="InputVector.png" width="800"><br>
+    </td>
+  </tr>
+</table>
+
+The results of this study was summarized in the paper submited to NIMA.
