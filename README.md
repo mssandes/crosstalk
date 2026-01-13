@@ -40,14 +40,25 @@ This module is based on particle physics models and is designed to compute induc
   </tr>
 </table>
 
+A 3×3 moving window (Fig. 3) is applied over the 7×7 cluster to compute first-neighbor XT contributions for each cell of interest, producing a composite signal that includes both noise and crosstalk effects.
 
-This repository contains a peace of samples, on clusters path, produced in the Lorrenzetti framework.
+<p align="center">
+  <b>Fig. 3.</b> Relative capacitive and inductive XT clusters production with respect a interest cell.
+</p>
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="RelatCluster.png" width="800"><br>
+    </td>
+  </tr>
+</table>
 
-- Function to generate the g(t) signal in an LAr calorimeter cell.
--     cellFunction(t): t is the sampling time desired
-- Function to generate the capacitive crosstalk (XT) signal for a neighbor cell.
--      XTalk(t): t is the sampling time desired
-- Functions to plot histograms to compare distributions.
--      plotHisto
--  The notebook below shows a example of 
--     generateSignals.ipynb
+An example of data generated with this module is available [here](https://github.com/mssandes/crosstalk/blob/main/generateSignals.ipynb)
+
+Main function to XT studies:
+-     cellFunction(t)
+- Generates the g(t) signal for an LAr calorimeter cell at sampling time t.
+-      XTalk(t)
+- Computes capacitive or inductive crosstalk (XT) signals for a neighboring cell at sampling time t.
+-     relativeClusters(Etruth)
+- Produces relative capacitive and inductive clusters based on the true deposited energy.
