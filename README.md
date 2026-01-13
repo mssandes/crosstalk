@@ -14,7 +14,7 @@ This codes is a module
 -     generateSignals.ipynb
 
 <p align="center">
-  <img src="Cluster.png" width="30%">
-  <img src="clusterAdressing.png" width="30%">
+  <img src="Cluster.png" width="35%">
+  <img src="clusterAdressing.png" width="20%">
   <img src="LCcoupling_sf.png" width="30%">
 </p>
