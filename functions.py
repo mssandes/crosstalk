@@ -5,7 +5,7 @@
 ## of the ATLAS experiment
 ##
 ## Author: Marton S Santos
-## 
+## mssandess@proton.me
 """
 This file is part of PH.D thesis to crosstalk mitigation using ML methods.
 
